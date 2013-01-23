@@ -30,6 +30,8 @@ if __name__ == '__main__':
     try:
         for record in find_records(source, ignore):
             data = record.find(PMH+"metadata")
+            if not data:
+                continue
             rdf = data.find(RDF+'RDF')
             if rdf is None:
                 rdf = data
