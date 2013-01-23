@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from lxml.etree import iterparse, tostring
 
+RDF_URI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+RDF = "{%s}" % RDF_URI
 PMH = "{http://www.openarchives.org/OAI/2.0/}"
 
 def find_records(source):
@@ -21,10 +23,13 @@ if __name__ == '__main__':
         source = gzip.open(sourcepath, 'rb')
     else:
         source = open(sourcepath)
-    print '<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+    print '<RDF xmlns="%s">' % RDF_URI
     with source:
         for record in find_records(source):
-            rdf = record.find(PMH+"metadata")[0]
+            data = record.find(PMH+"metadata")
+            rdf = data.find(RDF+'RDF')
+            if rdf is None:
+                rdf = data
             print tostring(rdf[0])
         print '</RDF>'
 
