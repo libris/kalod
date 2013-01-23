@@ -1,0 +1,29 @@
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dctype: <http://purl.org/dc/dcmitype/> .
+@prefix schema: <http://schema.org/> .
+@prefix wgs84_pos: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dbpowl: <http://dbpedia.org/ontology/> .
+
+@prefix dbpr: <http://dbpedia.org/resource/> .
+@prefix libris: <http://libris.kb.se/resource/> .
+@prefix ra_ark: <http://data.ra.se/> .
+
+[] a foaf:Person .
+[] a foaf:Organization . # Agent? vague...
+[] a schema:Place . # dbpowl:Place? dct:Location?
+[] a wgs84_pos:SpatialThing .
+[] a skos:Concept .
+[] a skos:ConceptScheme .
+
+# TODO: Arkiv, Arkivbestånd, subtyper därav; Objekt däri
+</arkiv/123> a dctype:Collection . # bibo:Collection ...
+
+[] a void:Dataset .
+
+
+#</concept/123> foaf:focus _:p1 .
+#_:p1 a foaf:Person .
+
