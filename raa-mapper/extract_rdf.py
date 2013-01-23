@@ -27,7 +27,7 @@ if __name__ == '__main__':
         source = open(sourcepath)
     ignore = ignore=["{http://kulturarvsdata.se/ksamsok#}presentation"]
     print '<RDF xmlns="%s">' % RDF_URI
-    with source:
+    try:
         for record in find_records(source, ignore):
             data = record.find(PMH+"metadata")
             rdf = data.find(RDF+'RDF')
@@ -35,4 +35,6 @@ if __name__ == '__main__':
                 rdf = data
             print tostring(rdf[0])
         print '</RDF>'
+    finally:
+        source.close()
 
