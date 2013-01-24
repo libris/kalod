@@ -200,5 +200,6 @@
   </xsl:template>
 
   <xsl:template match="text()"/>
+  <xsl:template match="text()" mode="top-level"/>
 
 </xsl:stylesheet>
