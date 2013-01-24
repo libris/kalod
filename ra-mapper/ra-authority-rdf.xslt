@@ -1,42 +1,13 @@
-<!DOCTYPE xsl:stylesheet [
-  <!ENTITY xsd 'http://www.w3.org/2001/XMLSchema#'>
-  <!ENTITY rark 'http://data.ra.se/vocab/archive#'>
-]>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns:oai="http://www.openarchives.org/OAI/2.0/"
-    xmlns:ra="http://libris.kb.se/vocab/ra"
-    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-    xmlns:skos="http://www.w3.org/2004/02/skos/core#"
-    xmlns:dct="http://purl.org/dc/terms/"
-    xmlns:dctype="http://purl.org/dc/dcmitype/"
-    xmlns:foaf="http://xmlns.com/foaf/0.1/"
-    xmlns:void="http://rdfs.org/ns/void#"
-    xmlns:schema="http://schema.org/"
-    xmlns:wgs84_pos="http://www.w3.org/2003/01/geo/wgs84_pos#"
-    xmlns:dbpowl="http://dbpedia.org/ontology/"
-    xmlns:rark="&rark;">
-
-  <xsl:param name="link-base" select="'http://id.riksarkivet.se'"/>
-  <xsl:param name="lang" select="'sv'"/>
-  <xsl:param name="publisher" select="'http://id.riksarkivet.se/ra'"/>
-
-  <xsl:template match="/">
-    <rdf:RDF xml:lang="{$lang}">
-      <xsl:apply-templates/>
-    </rdf:RDF>
-  </xsl:template>
-
-  <xsl:template match="text()"/>
+<!DOCTYPE xsl:stylesheet SYSTEM "ra_xsl.dtd">
+<xsl:stylesheet>
+  <xsl:include href="ra-rdf.xslt"/>
 
   <xsl:template match="ra:ra_container">
-    <xsl:variable name="guid" select="substring-before(substring-after(ra:url, 'http://nad.riksarkivet.se/?postid=Arkis'), '&amp;s=Balder')"/>
+    <xsl:variable name="guid"><xsl:call-template name="get-guid"/></xsl:variable>
     <xsl:variable name="typeid" select="ra:type/@id"/>
-    <!-- TODO: complete list
-        $ cat downloads/ra-authority-dump.xml | grep '<type id=' | sort | uniq
-    -->
+    <!-- see complete list "Posttyp_auktoritet.txt" -->
     <xsl:choose>
-      <xsl:when test="$typeid = '11'">
+      <xsl:when test="$typeid = '11' or $typeid = '12'">
         <xsl:call-template name="desc">
           <xsl:with-param name="type">foaf:Person</xsl:with-param>
           <xsl:with-param name="segment">person</xsl:with-param>
@@ -51,6 +22,12 @@
         </xsl:call-template>
       </xsl:when>
       <xsl:otherwise>
+        <xsl:if test="$typeid = '901'">
+          <xsl:message>
+            <xsl:text>Warning: typed as</xsl:text>
+            <xsl:value-of select="$typeid"/>
+          </xsl:message>
+        </xsl:if>
         <xsl:call-template name="desc">
           <xsl:with-param name="type">foaf:Organization</xsl:with-param>
           <xsl:with-param name="segment">org</xsl:with-param>
@@ -68,9 +45,10 @@
     <xsl:element name="{$type}">
       <xsl:attribute name="rdf:about"><xsl:value-of select="$uri"/></xsl:attribute>
       <xsl:apply-templates>
+        <xsl:with-param name="type" select="$type"/>
         <xsl:with-param name="uri" select="$uri"/>
       </xsl:apply-templates>
-      <foaf:primaryTopicOf>
+      <foaf:isPrimaryTopicOf>
         <foaf:Document rdf:about="{ra:url}">
           <foaf:primaryTopic rdf:resource="{$uri}"/>
           <dct:identifier xml:lang=""><xsl:value-of select="$guid"/></dct:identifier>
@@ -78,7 +56,7 @@
           <dct:publisher rdf:resource="{$publisher}"/>
           <!-- dct:isPartOf dataset -->
         </foaf:Document>
-      </foaf:primaryTopicOf>
+      </foaf:isPrimaryTopicOf>
     </xsl:element>
     <xsl:apply-templates mode="top-level">
       <xsl:with-param name="uri" select="$uri"/>
@@ -88,6 +66,9 @@
   <xsl:template match="ra:name[text()]">
     <foaf:name><xsl:value-of select="."/></foaf:name>
   </xsl:template>
+
+  <!-- TODO: generate Class, Concept and Property definitions from definition
+       lists instead. Only link to them from here.  -->
 
   <xsl:template match="ra:type">
     <rdf:type>
@@ -122,11 +103,27 @@
   </xsl:template>
 
   <xsl:template match="ra:startDate">
-    <dbpowl:activeYearsStartYear rdf:datatype="&xsd;gYear"><xsl:value-of select="."/></dbpowl:activeYearsStartYear>
+    <xsl:param name="type"/>
+    <xsl:choose>
+      <xsl:when test="$type = 'foaf:Person'">
+        <dbpowl:birthYear rdf:datatype="&xsd;gYear"><xsl:value-of select="."/></dbpowl:birthYear>
+      </xsl:when>
+      <xsl:otherwise>
+        <dbpowl:activeYearsStartYear rdf:datatype="&xsd;gYear"><xsl:value-of select="."/></dbpowl:activeYearsStartYear>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="ra:endDate">
-    <dbpowl:activeYearsEndYear rdf:datatype="&xsd;gYear"><xsl:value-of select="."/></dbpowl:activeYearsEndYear>
+    <xsl:param name="type"/>
+    <xsl:choose>
+      <xsl:when test="$type = 'foaf:Person'">
+        <dbpowl:deathYear rdf:datatype="&xsd;gYear"><xsl:value-of select="."/></dbpowl:deathYear>
+      </xsl:when>
+      <xsl:otherwise>
+        <dbpowl:activeYearsEndYear rdf:datatype="&xsd;gYear"><xsl:value-of select="."/></dbpowl:activeYearsEndYear>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="ra:alternativeName[@typeName='Auktoriserad namnform' and text()]">
@@ -137,29 +134,60 @@
     <skos:altLabel><xsl:value-of select="."/></skos:altLabel>
   </xsl:template>
 
-  <!-- ra:archive -->
+  <!--
   <xsl:template match="ra:archive">
-    <xsl:param name="uri"/>
     <xsl:element name="rark:archiveRelation-{@relationCode}">
       <rdf:Description rdf:about="{$link-base}/archive/{@id}"/>
-      <!--
-      <dctype:Collection rdf:about="{$link-base}/archive/{@id}">
-        <dct:identifier xml:lang=""><xsl:value-of select="@id"/></dct:identifier>
-        <!- -<dct:contributor rdf:resource="{$uri}"/> - ->
-      </dctype:Collection>
-      -->
     </xsl:element>
   </xsl:template>
+  -->
   <xsl:template match="ra:archive" mode="top-level">
+    <xsl:param name="uri"/>
+    <rdf:Description rdf:about="{$link-base}/archive/{@id}">
+      <!-- TODO: evaluate relation applicability -->
+      <xsl:choose>
+        <xsl:when test="@relationCode = '1' or @relationCode = '3'">
+          <dct:creator rdf:resource="{$uri}"/>
+        </xsl:when>
+        <xsl:when test="@relationCode = '2' or @relationCode = '7'">
+          <dct:contributor rdf:resource="{$uri}"/>
+        </xsl:when>
+        <xsl:when test="@relationCode = '4'">
+          <dct:subject rdf:resource="{$uri}"/>
+        </xsl:when>
+        <xsl:when test="@relationCode = '5'">
+          <dbpowl:curator rdf:resource="{$uri}"/>
+        </xsl:when>
+        <xsl:when test="@relationCode = '6' or @relationCode = '8'">
+          <dbpowl:maintainedBy rdf:resource="{$uri}"/>
+        </xsl:when>
+      </xsl:choose>
+    </rdf:Description>
+    <!--
     <rdf:Property rdf:about="&rark;archiveRelation-{@relationCode}">
       <rdfs:label><xsl:value-of select="@relation"/></rdfs:label>
     </rdf:Property>
+    -->
   </xsl:template>
 
-  <!-- ra:place -->
   <xsl:template match="ra:place">
-    <!-- TODO: @relationTypeId a rdf:Property; rdfs:label @relationType -->
-    <foaf:based_near>
+    <xsl:variable name="relation">
+      <xsl:choose>
+        <!-- 1: Verksamhetsort; 2: Sätesort; 5: Verksamhet -->
+        <xsl:when test="@relationTypeId = '1' or
+                  relationTypeId = '2' or
+                  relationTypeId = '5'
+                  ">foaf:based_near<!--schema:location--></xsl:when>
+        <xsl:when test="@relationTypeId = '3'">dbpowl:birthPlace</xsl:when>
+        <xsl:when test="@relationTypeId = '4'">dbpowl:deathPlace</xsl:when>
+        <xsl:otherwise>dct:relation</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:element name="{$relation}">
+      <!-- TODO:
+           - link to identified place;
+           - generate place data in ra-terms-rdf.xslt;
+           - put class def in controlled set -->
       <dbpowl:Place>
         <dct:identifier xml:lang=""><xsl:value-of select="@code"/></dct:identifier>
         <rdf:type>
@@ -168,7 +196,9 @@
           </rdfs:Class>
         </rdf:type>
       </dbpowl:Place>
-    </foaf:based_near>
+    </xsl:element>
   </xsl:template>
+
+  <xsl:template match="text()"/>
 
 </xsl:stylesheet>
